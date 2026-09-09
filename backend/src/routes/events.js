@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
 const router = Router();
-const TYPES = ['goal','assist','penalty_corner','penalty_stroke','card','substitution','shot','save'];
+const TYPES = ['goal','assist','penalty_corner','penalty_stroke','card','substitution','shot','save','period_start','period_end'];
 
 router.get('/matches/:matchId/events', async (req,res)=>{
   const {data,error}=await supabase.from('event').select('*, player:player_id(name, jersey_number), related_player:related_player_id(name, jersey_number)').eq('match_id',req.params.matchId).order('created_at',{ascending:false});
