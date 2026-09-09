@@ -12,37 +12,83 @@ export default function Home() {
     api.getMatches('?status=scheduled').then(setUpcoming).catch((e) => setError(e.message));
   }, []);
 
-  return (
-    <div>
-      <h1>Hockey Heroes</h1>
-      {error && <p className="error">Couldn't load matches: {error}</p>}
+  const featured = live[0] || upcoming[0];
 
-      <section>
-        <h2>Live now</h2>
-        {live.length === 0 && <p className="muted">No live matches right now.</p>}
-        <ul className="match-list">
-          {live.map((m) => (
-            <li key={m.id}>
-              <Link to={`/matches/${m.id}`}>
-                {m.home_team?.name} {m.home_score} — {m.away_score} {m.away_team?.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+  return (
+    <div className="home-page">
+      <section className="hero">
+        <div className="hero-copy">
+          <span className="eyebrow">🏑 LIVE HOCKEY HUB</span>
+          <h1>Every match.<br /><span>Every moment.</span></h1>
+          <p>Follow live scores, match events, teams and player performances from one fast, focused dashboard.</p>
+          <div className="hero-actions">
+            <Link className="btn btn-primary" to="/matches">Explore matches <span>→</span></Link>
+            <Link className="btn btn-ghost" to="/teams">Browse teams</Link>
+          </div>
+        </div>
+        <div className="hero-score">
+          <div className="score-glow" />
+          <span className="live-pill">{live.length ? '● LIVE NOW' : 'NEXT UP'}</span>
+          {featured ? (
+            <>
+              <p className="match-label">{featured.home_team?.name} vs {featured.away_team?.name}</p>
+              <div className="hero-scoreline">
+                <strong>{featured.home_score ?? 0}</strong><span>—</span><strong>{featured.away_score ?? 0}</strong>
+              </div>
+              <p className="muted">{featured.status === 'live' ? 'Live match' : new Date(featured.scheduled_at).toLocaleString()}</p>
+              <Link to={"/matches/" + featured.id} className="score-link">View match →</Link>
+            </>
+          ) : (
+            <>
+              <h2>No match scheduled</h2>
+              <p className="muted">Your next hockey moment will appear here.</p>
+            </>
+          )}
+        </div>
       </section>
 
-      <section>
-        <h2>Upcoming</h2>
-        {upcoming.length === 0 && <p className="muted">No upcoming matches scheduled.</p>}
-        <ul className="match-list">
-          {upcoming.map((m) => (
-            <li key={m.id}>
-              <Link to={`/matches/${m.id}`}>
-                {m.home_team?.name} vs {m.away_team?.name} — {new Date(m.scheduled_at).toLocaleString()}
+      {error && <div className="alert error">Couldn't load matches: {error}</div>}
+
+      <section className="section-block">
+        <div className="section-heading">
+          <div><span className="eyebrow">MATCH CENTRE</span><h2>Live now</h2></div>
+          <Link to="/matches">See all →</Link>
+        </div>
+        {live.length === 0 ? (
+          <div className="empty-card"><span>🏑</span><div><strong>No live matches right now</strong><p className="muted">Check back when the action starts.</p></div></div>
+        ) : (
+          <div className="match-grid">
+            {live.map((m) => (
+              <Link className="match-card live-card" key={m.id} to={"/matches/" + m.id}>
+                <div className="card-top"><span className="live-pill small">● LIVE</span><span>View →</span></div>
+                <div className="teams-score">
+                  <div><span>{m.home_team?.name}</span><strong>{m.home_score ?? 0}</strong></div>
+                  <div><span>{m.away_team?.name}</span><strong>{m.away_score ?? 0}</strong></div>
+                </div>
               </Link>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="section-block">
+        <div className="section-heading">
+          <div><span className="eyebrow">UP NEXT</span><h2>Upcoming matches</h2></div>
+          <Link to="/matches">View schedule →</Link>
+        </div>
+        {upcoming.length === 0 ? (
+          <div className="empty-card"><span>📅</span><div><strong>No upcoming matches</strong><p className="muted">Schedule the next game from Admin.</p></div></div>
+        ) : (
+          <div className="match-grid">
+            {upcoming.map((m) => (
+              <Link className="match-card" key={m.id} to={"/matches/" + m.id}>
+                <div className="card-top"><span className="status status-scheduled">SCHEDULED</span><span>→</span></div>
+                <div className="fixture"><strong>{m.home_team?.name}</strong><span>VS</span><strong>{m.away_team?.name}</strong></div>
+                <p className="muted">{new Date(m.scheduled_at).toLocaleString()}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
