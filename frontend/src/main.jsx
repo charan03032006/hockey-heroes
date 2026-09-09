@@ -12,25 +12,31 @@ import TeamDetail from './pages/TeamDetail.jsx';
 import PlayerDetail from './pages/PlayerDetail.jsx';
 import Login from './pages/Login.jsx';
 import Admin from './pages/Admin.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import { AuthProvider } from './lib/AuthContext.jsx';
 
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<App />}>
-          <Route index element={<Home />} />
-          <Route path="matches" element={<Matches />} />
-          <Route path="matches/:id" element={<MatchLive />} />
-          <Route path="matches/:id/score" element={<Scorer />} />
-          <Route path="teams" element={<Teams />} />
-          <Route path="teams/:id" element={<TeamDetail />} />
-          <Route path="players/:id" element={<PlayerDetail />} />
-          <Route path="login" element={<Login />} />
-          <Route path="admin" element={<Admin />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<App />}>
+            <Route index element={<Home />} />
+            <Route path="matches" element={<Matches />} />
+            <Route path="matches/:id" element={<MatchLive />} />
+            <Route path="teams" element={<Teams />} />
+            <Route path="teams/:id" element={<TeamDetail />} />
+            <Route path="players/:id" element={<PlayerDetail />} />
+            <Route path="login" element={<Login />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="matches/:id/score" element={<Scorer />} />
+              <Route path="admin" element={<Admin />} />
+            </Route>
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
 );
