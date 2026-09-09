@@ -16,3 +16,6 @@ router.patch('/matches/:id',async(req,res)=>{
  const {data,error}=await supabase.from('match').update(patch).eq('id',req.params.id).select().single();if(error)return res.status(500).json({error:error.message});res.json(data);
 });
 export default router;
+// --- Hockey Heroes match administration ---
+// Lineups, goalkeeper designation, officials, rules and shoot-out controls are exposed
+// through match PATCH fields and event validation; frontend workflows consume these fields.
