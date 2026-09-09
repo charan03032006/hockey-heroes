@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
+import { Link } from 'react-router-dom';
 
 export default function Admin() {
   const [teams,setTeams]=useState([]); const [teamName,setTeamName]=useState(''); const [playerForm,setPlayerForm]=useState({team_id:'',name:'',jersey_number:'',position:''}); const [matchForm,setMatchForm]=useState({home_team_id:'',away_team_id:'',scheduled_at:''}); const [message,setMessage]=useState('');
@@ -9,7 +10,7 @@ export default function Admin() {
   async function createPlayer(e){e.preventDefault();await api.createPlayer({...playerForm,jersey_number:Number(playerForm.jersey_number)||null});setMessage(`Player "${playerForm.name}" added.`);setPlayerForm({team_id:'',name:'',jersey_number:'',position:''});}
   async function createMatch(e){e.preventDefault();await api.createMatch(matchForm);setMessage('Match scheduled successfully.');setMatchForm({home_team_id:'',away_team_id:'',scheduled_at:''});}
   return <div className="admin-page">
-    <div className="page-head"><div><span className="eyebrow">MANAGEMENT</span><h1>Admin dashboard</h1><p className="muted">Set up teams, players and match schedules from one control centre.</p></div><div className="admin-stat"><strong>{teams.length}</strong><span>Teams</span></div></div>
+    <div className="page-head"><div><span className="eyebrow">MANAGEMENT</span><h1>Admin dashboard</h1><p className="muted">Set up teams, players and match schedules from one control centre.</p></div><Link className="btn btn-primary" to="/tournaments">🏆 Tournament Manager →</Link><div className="admin-stat"><strong>{teams.length}</strong><span>Teams</span></div></div>
     {message&&<div className="admin-success">✓ {message}</div>}
     <div className="admin-grid">
       <section className="admin-card"><div className="admin-card-head"><div className="admin-icon">＋</div><div><span className="eyebrow">01 · TEAMS</span><h2>Create team</h2></div></div><form onSubmit={createTeam}><input placeholder="Team name" value={teamName} onChange={e=>setTeamName(e.target.value)} required/><button type="submit">Create team →</button></form><div className="team-mini-list">{teams.slice(0,6).map(t=><div key={t.id}><span className="team-badge">{t.name.slice(0,1).toUpperCase()}</span><b>{t.name}</b></div>)}</div></section>
