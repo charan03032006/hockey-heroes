@@ -15,12 +15,12 @@ export default function App() {
         <nav>
           <Link to="/matches">Matches</Link>
           <Link to="/teams">Teams</Link>
-          {user && <Link to="/admin">Admin</Link>}
-          {user ? <button type="button" className="nav-button" onClick={handleLogout}>Logout</button> : <Link className="nav-login" to="/login">Scorer login</Link>}
+          {user && <Link to="/admin">Manage</Link>}
+          {user ? <button type="button" className="nav-button" onClick={handleLogout}>Logout</button> : <Link className="nav-login" to="/login">Scorer sign in</Link>}
         </nav>
       </header>
       <main className="content"><Outlet /></main>
-      <footer className="site-footer"><span>🏑 Hockey Heroes</span><span>Live scores. Real moments.</span></footer>
+      <footer className="site-footer"><span>🏑 Hockey Heroes</span><span>Live scores • Teams • Players</span></footer>
     </div>
   );
 }
