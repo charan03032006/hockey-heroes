@@ -49,7 +49,7 @@ export default function Home() {
 
       {error && <div className="alert error">Couldn't load matches: {error}</div>}
 
-      <section className="section-block">
+      <section className="quick-start"><div><span className="eyebrow">NEW HERE?</span><h2>Follow a game in 3 simple steps</h2></div><div className="quick-steps"><div><b>1</b><span><strong>Find a match</strong><small>Choose live, upcoming or finished.</small></span></div><div><b>2</b><span><strong>Open the match</strong><small>See the score and match timeline.</small></span></div><div><b>3</b><span><strong>Follow the action</strong><small>Watch hockey events update live.</small></span></div></div></section><section className="section-block">
         <div className="section-heading">
           <div><span className="eyebrow">MATCH CENTRE</span><h2>Live now</h2></div>
           <Link to="/matches">See all →</Link>
