@@ -11,6 +11,8 @@ router.get('/matches/:matchId/events', async (req,res)=>{
 router.post('/matches/:matchId/events', async (req,res)=>{
   const {player_id,team_id,type,period,game_time,x,y,penalty_minutes,outcome,related_player_id,card_type,substitution_in,substitution_out}=req.body;
   if(!TYPES.includes(type))return res.status(400).json({error:`type must be one of ${TYPES.join(', ')}`});
+  if(type==='goal' && !player_id)return res.status(400).json({error:'A goal must be assigned to a player.'});
+  if(type==='card' && !['green','yellow','red'].includes(card_type))return res.status(400).json({error:'Card must be green, yellow or red.'});
   if(!Number.isInteger(Number(period))||Number(period)<1||Number(period)>4)return res.status(400).json({error:'period must be 1, 2, 3 or 4'});
   const {data:match}=await supabase.from('match').select('*').eq('id',req.params.matchId).single();
   if(!match)return res.status(404).json({error:'Match not found'});
