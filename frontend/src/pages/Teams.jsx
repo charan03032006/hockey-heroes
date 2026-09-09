@@ -1,25 +1,2 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../lib/api.js';
-
-export default function Teams() {
-  const [teams, setTeams] = useState([]);
-
-  useEffect(() => {
-    api.getTeams().then(setTeams).catch(() => setTeams([]));
-  }, []);
-
-  return (
-    <div>
-      <h1>Teams</h1>
-      <ul className="team-list">
-        {teams.map((t) => (
-          <li key={t.id}>
-            <Link to={`/teams/${t.id}`}>{t.name}</Link>
-          </li>
-        ))}
-        {teams.length === 0 && <p className="muted">No teams yet — add one in Admin.</p>}
-      </ul>
-    </div>
-  );
-}
+import {useEffect,useState} from 'react';import{Link}from'react-router-dom';import{api}from'../lib/api.js';
+export default function Teams(){const[teams,setTeams]=useState([]);const[q,setQ]=useState('');useEffect(()=>{api.getTeams().then(setTeams).catch(()=>setTeams([]));},[]);const shown=teams.filter(t=>t.name.toLowerCase().includes(q.toLowerCase()));return <div className="directory-page"><div className="page-head"><div><span className="eyebrow">TEAM DIRECTORY</span><h1>Find a team</h1><p className="muted">Open a team to see its players and matches.</p></div></div><div className="directory-tools"><input placeholder="Search teams…" value={q} onChange={e=>setQ(e.target.value)}/><span>{shown.length} team{shown.length===1?'':'s'}</span></div><div className="team-grid">{shown.map(t=><Link className="team-card" key={t.id} to={`/teams/${t.id}`}><span className="team-badge">{t.name.slice(0,1).toUpperCase()}</span><div><h3>{t.name}</h3><p>View players & matches →</p></div></Link>)}</div>{!teams.length&&<div className="empty-card"><span>👥</span><div><strong>No teams yet</strong><p className="muted">An admin can create the first team from Manage.</p></div></div>}</div>}
