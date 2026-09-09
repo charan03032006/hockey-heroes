@@ -1,6 +1,17 @@
 import { Link, Outlet } from 'react-router-dom';
+import { useAuth } from './lib/AuthContext.jsx';
 
 export default function App() {
+  const { user, logout } = useAuth();
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -8,8 +19,12 @@ export default function App() {
         <nav>
           <Link to="/matches">Matches</Link>
           <Link to="/teams">Teams</Link>
-          <Link to="/admin">Admin</Link>
-          <Link to="/login">Login</Link>
+          {user && <Link to="/admin">Admin</Link>}
+          {user ? (
+            <button type="button" onClick={handleLogout}>Logout</button>
+          ) : (
+            <Link to="/login">Login</Link>
+          )}
         </nav>
       </header>
       <main className="content">
