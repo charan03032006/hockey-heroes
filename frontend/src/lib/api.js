@@ -24,6 +24,9 @@ export const api = {
   deleteEvent: (id) => request(`/events/${id}`, { method: 'DELETE' }),
 
   getTeams: () => request('/teams'),
+  getTournaments: () => request('/tournaments'),
+  createTournament: (body) => request('/tournaments', { method:'POST', body:JSON.stringify(body) }),
+  addTournamentTeam: (id, team_id) => request(`/tournaments/${id}/teams`, { method:'POST', body:JSON.stringify({team_id}) }),
   getTeam: (id) => request(`/teams/${id}`),
   createTeam: (body) => request('/teams', { method: 'POST', body: JSON.stringify(body) }),
 
