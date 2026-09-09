@@ -6,6 +6,7 @@ import matchesRouter from './routes/matches.js';
 import eventsRouter from './routes/events.js';
 import teamsRouter from './routes/teams.js';
 import playersRouter from './routes/players.js';
+import tournamentsRouter from './routes/tournaments.js';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/api/matches', matchesRouter);
 app.use('/api', eventsRouter); // handles /api/matches/:matchId/events and /api/events/:id
 app.use('/api/teams', teamsRouter);
 app.use('/api/players', playersRouter);
+app.use('/api/tournaments', tournamentsRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Hockey Heroes API running on port ${PORT}`));
