@@ -16,8 +16,8 @@ app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-app.use('/api/matches', matchesRouter);
-app.use('/api', eventsRouter); // handles /api/matches/:matchId/events and /api/events/:id
+app.use('/api', matchesRouter);
+app.use('/api', eventsRouter);
 app.use('/api/teams', teamsRouter);
 app.use('/api/players', playersRouter);
 app.use('/api/tournaments', tournamentsRouter);
