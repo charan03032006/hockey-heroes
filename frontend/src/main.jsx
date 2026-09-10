@@ -13,6 +13,7 @@ import PlayerDetail from './pages/PlayerDetail.jsx';
 import Login from './pages/Login.jsx';
 import Admin from './pages/Admin.jsx';
 import TournamentManager from './pages/TournamentManager.jsx';
+import TournamentAnalytics from './pages/TournamentAnalytics.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/AuthContext.jsx';
 
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="matches/:id/score" element={<Scorer />} />
               <Route path="admin" element={<Admin />} />
               <Route path="tournaments" element={<TournamentManager />} />
+              <Route path="tournaments/:id/analytics" element={<TournamentAnalytics />} />
             </Route>
           </Route>
         </Routes>
