@@ -21,19 +21,13 @@ router.post('/matches', async (req, res) => {
   const { home_team_id, away_team_id, scheduled_at, tournament_id, competition_rule = 'standard' } = req.body;
   if (!home_team_id || !away_team_id || !scheduled_at) return res.status(400).json({ error: 'Home team, away team and date/time are required.' });
   if (home_team_id === away_team_id) return res.status(400).json({ error: 'Home and away teams must be different.' });
-  const { data, error } = await supabase.from('match').insert({
-    home_team_id, away_team_id, scheduled_at, tournament_id: tournament_id || null,
-    competition_rule, status: 'scheduled', home_score: 0, away_score: 0,
-    current_period: 1, clock_seconds: 0, clock_running: false,
-  }).select().single();
+  const { data, error } = await supabase.from('match').insert({ home_team_id, away_team_id, scheduled_at, tournament_id: tournament_id || null, competition_rule, status: 'scheduled', home_score: 0, away_score: 0, current_period: 1, clock_seconds: 0, clock_running: false }).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 });
 
 router.get('/matches/:id/lineups', async (req, res) => {
-  const { data, error } = await supabase.from('match_lineup')
-    .select('*,player:player_id(id,name,jersey_number,position,is_goalkeeper,team_id)')
-    .eq('match_id', req.params.id);
+  const { data, error } = await supabase.from('match_lineup').select('*,player:player_id(id,name,jersey_number,position,is_goalkeeper,team_id)').eq('match_id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data || []);
 });
@@ -56,10 +50,10 @@ router.put('/matches/:id/lineups', async (req, res) => {
 
   for (const teamId of allowedTeams) {
     const rows = lineups.filter((x) => x.team_id === teamId);
-    if (!rows.length) return res.status(400).json({ error: 'Both teams need a lineup.' });
     const starting = rows.filter((x) => x.is_starting);
     const keepers = rows.filter((x) => x.is_goalkeeper);
-    if (!starting.length) return res.status(400).json({ error: 'Each team needs at least one starting player.' });
+    if (rows.length < 11 || rows.length > 18) return res.status(400).json({ error: 'Each team must have 11–18 matchday players.' });
+    if (starting.length !== 11) return res.status(400).json({ error: 'Each team must have exactly 11 starting players.' });
     if (keepers.length !== 1) return res.status(400).json({ error: 'Each team must have exactly one designated goalkeeper.' });
     if (!keepers[0].is_starting) return res.status(400).json({ error: 'The designated goalkeeper must be a starting player.' });
   }
@@ -105,9 +99,9 @@ router.get('/matches/:id/readiness', async (req, res) => {
   const checks = [
     ...[match.home_team_id, match.away_team_id].map((teamId) => {
       const rows = (lineups || []).filter((x) => x.team_id === teamId);
-      return { team_id: teamId, lineup: rows.length > 0, goalkeeper: rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1 };
+      return { team_id: teamId, lineup: rows.length === 11 || rows.length > 11, starting_players: rows.filter((x) => x.is_starting).length === 11, goalkeeper: rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1 };
     }),
-    { officials: (officials || []).some((x) => x.role === 'scorer') },
+    { officials: (officials || []).some((x) => x.role === 'umpire_1') && (officials || []).some((x) => x.role === 'scorer') },
   ];
   const ready = checks.every((check) => Object.entries(check).filter(([key]) => key !== 'team_id').every(([, value]) => value === true));
   res.json({ ready, checks });
@@ -129,9 +123,9 @@ router.patch('/matches/:id', async (req, res) => {
     ]);
     const ready = [match.home_team_id, match.away_team_id].every((teamId) => {
       const rows = (lineups || []).filter((x) => x.team_id === teamId);
-      return rows.length > 0 && rows.some((x) => x.is_starting) && rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1;
-    }) && (officials || []).some((x) => x.role === 'scorer');
-    if (!ready) return res.status(400).json({ error: 'Pre-match checks are incomplete. Both lineups, starting goalkeepers and a scorer are required.' });
+      return rows.length >= 11 && rows.length <= 18 && rows.filter((x) => x.is_starting).length === 11 && rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1;
+    }) && (officials || []).some((x) => x.role === 'umpire_1') && (officials || []).some((x) => x.role === 'scorer');
+    if (!ready) return res.status(400).json({ error: 'Pre-match checks are incomplete. Both teams need 11 starters, one starting goalkeeper, an umpire and a scorer.' });
     if (!patch.started_at) patch.started_at = new Date().toISOString();
   }
   if (patch.status === 'final') { patch.clock_running = false; patch.ended_at = new Date().toISOString(); }
