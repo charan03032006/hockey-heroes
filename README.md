@@ -14,11 +14,11 @@ hockey-heroes/
 │       └── routes/   matches, events, teams, players
 ├── frontend/         React (Vite) app
 │   └── src/
-│       ├── pages/    Home, MatchLive, Scorer, Team, Player, Admin, Login
+│       ├── pages/    Home, MatchLive, Scorer, Team, Player, Admin, Login, TournamentManager
 │       ├── components/
 │       └── lib/      supabase client, api helper
 └── docs/
-    └── PLAN.md       Full build plan (schema, routes, roadmap)
+    └── PLAN.md      Full build plan (schema, routes, roadmap)
 ```
 
 ## Setup
