@@ -41,7 +41,6 @@ router.get('/matches/:id/lineups', async (req, res) => {
 router.put('/matches/:id/lineups', async (req, res) => {
   const { lineups = [] } = req.body;
   if (!Array.isArray(lineups)) return res.status(400).json({ error: 'Lineups must be an array.' });
-
   const { data: match, error: matchError } = await supabase.from('match').select('home_team_id,away_team_id,status').eq('id', req.params.id).single();
   if (matchError) return res.status(404).json({ error: 'Match not found.' });
   if (match.status === 'live' || match.status === 'final') return res.status(400).json({ error: 'Lineups cannot be changed after the match starts.' });
@@ -55,15 +54,14 @@ router.put('/matches/:id/lineups', async (req, res) => {
   const playerMap = new Map((players || []).map((p) => [p.id, p]));
   if (lineups.some((x) => !playerMap.has(x.player_id) || playerMap.get(x.player_id).team_id !== x.team_id)) return res.status(400).json({ error: 'Every lineup player must belong to the selected team.' });
 
-  const grouped = Object.fromEntries(allowedTeams.map((id) => [id, lineups.filter((x) => x.team_id === id)]));
   for (const teamId of allowedTeams) {
-    const rows = grouped[teamId];
+    const rows = lineups.filter((x) => x.team_id === teamId);
     if (!rows.length) return res.status(400).json({ error: 'Both teams need a lineup.' });
     const starting = rows.filter((x) => x.is_starting);
     const keepers = rows.filter((x) => x.is_goalkeeper);
-    if (starting.length < 1) return res.status(400).json({ error: 'Each team needs at least one starting player.' });
+    if (!starting.length) return res.status(400).json({ error: 'Each team needs at least one starting player.' });
     if (keepers.length !== 1) return res.status(400).json({ error: 'Each team must have exactly one designated goalkeeper.' });
-    if (keepers[0].is_starting !== true) return res.status(400).json({ error: 'The designated goalkeeper must be a starting player.' });
+    if (!keepers[0].is_starting) return res.status(400).json({ error: 'The designated goalkeeper must be a starting player.' });
   }
 
   const { error: deleteError } = await supabase.from('match_lineup').delete().eq('match_id', req.params.id);
@@ -104,13 +102,14 @@ router.get('/matches/:id/readiness', async (req, res) => {
     supabase.from('match_lineup').select('team_id,is_starting,is_goalkeeper').eq('match_id', req.params.id),
     supabase.from('match_official').select('role').eq('match_id', req.params.id),
   ]);
-  const checks = [];
-  for (const teamId of [match.home_team_id, match.away_team_id]) {
-    const rows = (lineups || []).filter((x) => x.team_id === teamId);
-    checks.push({ team_id: teamId, lineup: rows.length > 0, goalkeeper: rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1 });
-  }
-  checks.push({ officials: (officials || []).some((x) => x.role === 'scorer') });
-  const ready = checks.every((x) => Object.values(x).every((v) => v === true || typeof v === 'string'));
+  const checks = [
+    ...[match.home_team_id, match.away_team_id].map((teamId) => {
+      const rows = (lineups || []).filter((x) => x.team_id === teamId);
+      return { team_id: teamId, lineup: rows.length > 0, goalkeeper: rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1 };
+    }),
+    { officials: (officials || []).some((x) => x.role === 'scorer') },
+  ];
+  const ready = checks.every((check) => Object.entries(check).filter(([key]) => key !== 'team_id').every(([, value]) => value === true));
   res.json({ ready, checks });
 });
 
@@ -122,8 +121,17 @@ router.patch('/matches/:id', async (req, res) => {
   if (patch.clock_seconds !== undefined && (Number(patch.clock_seconds) < 0 || Number(patch.clock_seconds) > 900)) return res.status(400).json({ error: 'A regulation period is 15 minutes.' });
 
   if (patch.status === 'live') {
-    const { data: readiness } = await fetch(`${req.protocol}://${req.get('host')}/api/matches/${req.params.id}/readiness`).then((r) => r.json()).catch(() => [null]);
-    if (readiness && !readiness.ready) return res.status(400).json({ error: 'Pre-match checks are incomplete.', checks: readiness.checks });
+    const { data: match } = await supabase.from('match').select('home_team_id,away_team_id,status').eq('id', req.params.id).maybeSingle();
+    if (!match) return res.status(404).json({ error: 'Match not found.' });
+    const [{ data: lineups }, { data: officials }] = await Promise.all([
+      supabase.from('match_lineup').select('team_id,is_starting,is_goalkeeper').eq('match_id', req.params.id),
+      supabase.from('match_official').select('role').eq('match_id', req.params.id),
+    ]);
+    const ready = [match.home_team_id, match.away_team_id].every((teamId) => {
+      const rows = (lineups || []).filter((x) => x.team_id === teamId);
+      return rows.length > 0 && rows.some((x) => x.is_starting) && rows.filter((x) => x.is_goalkeeper && x.is_starting).length === 1;
+    }) && (officials || []).some((x) => x.role === 'scorer');
+    if (!ready) return res.status(400).json({ error: 'Pre-match checks are incomplete. Both lineups, starting goalkeepers and a scorer are required.' });
     if (!patch.started_at) patch.started_at = new Date().toISOString();
   }
   if (patch.status === 'final') { patch.clock_running = false; patch.ended_at = new Date().toISOString(); }
