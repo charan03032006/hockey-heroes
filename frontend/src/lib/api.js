@@ -23,11 +23,9 @@ export const api = {
   getMatchOfficials: (id) => request(`/matches/${id}/officials`),
   saveMatchOfficials: (id, officials) => request(`/matches/${id}/officials`, { method: 'PUT', body: JSON.stringify({ officials }) }),
   getMatchReadiness: (id) => request(`/matches/${id}/readiness`),
-
   getEvents: (matchId) => request(`/matches/${matchId}/events`),
   createEvent: (matchId, body) => request(`/matches/${matchId}/events`, { method: 'POST', body: JSON.stringify(body) }),
   deleteEvent: (id) => request(`/events/${id}`, { method: 'DELETE' }),
-
   getTeams: () => request('/teams'),
   getTournaments: () => request('/tournaments'),
   createTournament: (body) => request('/tournaments', { method: 'POST', body: JSON.stringify(body) }),
@@ -35,9 +33,11 @@ export const api = {
   addTournamentTeam: (id, team_id) => request(`/tournaments/${id}/teams`, { method: 'POST', body: JSON.stringify({ team_id }) }),
   getTournamentFixtures: (id) => request(`/tournaments/${id}/fixtures`),
   createTournamentFixture: (id, body) => request(`/tournaments/${id}/fixtures`, { method: 'POST', body: JSON.stringify(body) }),
+  getTournamentStandings: (id) => request(`/tournaments/${id}/standings`),
+  getPlayerLeaderboard: (id) => request(`/tournaments/${id}/player-leaderboard`),
+  getTournamentAnalytics: (id) => request(`/tournaments/${id}/analytics`),
   getTeam: (id) => request(`/teams/${id}`),
   createTeam: (body) => request('/teams', { method: 'POST', body: JSON.stringify(body) }),
-
   getPlayer: (id) => request(`/players/${id}`),
   createPlayer: (body) => request('/players', { method: 'POST', body: JSON.stringify(body) }),
 };
