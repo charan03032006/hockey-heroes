@@ -29,7 +29,7 @@ export default function PlayerDetail() {
     <div className="page-shell">
       <div className="page-head">
         <div><span className="eyebrow">PLAYER PROFILE</span><h1>#{player.jersey_number ?? '—'} {player.name}</h1><p className="muted">{player.team?.name || 'No team'} · {player.position || 'Player'}</p></div>
-        <Link className="btn btn-ghost" to="/players">← Players</Link>
+        <Link className="btn btn-ghost" to="/tournaments">← Tournaments</Link>
       </div>
 
       <section className="dashboard-grid">{cards.map(([name, value]) => <div className="stat-card" key={name}><span>{name.toUpperCase()}</span><strong>{value}</strong></div>)}</section>
