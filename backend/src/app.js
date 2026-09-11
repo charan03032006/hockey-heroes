@@ -12,7 +12,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/health', (req, res) => {
+// Keep the health endpoint under /api so local and Vercel production
+// requests use the same API contract.
+app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'hockey-heroes-api' });
 });
 
