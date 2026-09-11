@@ -3,6 +3,12 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/AuthContext.jsx';
 
+function getAuthRedirectUrl() {
+  const configuredUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
+  if (configuredUrl) return configuredUrl.replace(/\/$/, '') + '/login';
+  return `${window.location.origin}/login`;
+}
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -22,7 +28,11 @@ export default function Login() {
     setSent(false);
     setSending(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: window.location.origin + '/login' } });
+      const redirectTo = getAuthRedirectUrl();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: redirectTo },
+      });
       if (error) setError(error.message);
       else setSent(true);
     } catch (e) {
