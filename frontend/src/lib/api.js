@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
@@ -21,7 +22,7 @@ export const api = {
   getMatchLineups: (id) => request(`/matches/${id}/lineups`),
   saveMatchLineups: (id, lineups) => request(`/matches/${id}/lineups`, { method: 'PUT', body: JSON.stringify({ lineups }) }),
   getMatchOfficials: (id) => request(`/matches/${id}/officials`),
-  saveMatchOfficials: (id, officials) => request(`/matches/${id}/officials`, { method: 'PUT', body: JSON.stringify({ officials }) }),
+  saveMatchOfficials: (id, officials) => request(`/matches/${id}/officials`, { method: 'PUT', body: JSON.stringify({ officials })),
   getMatchReadiness: (id) => request(`/matches/${id}/readiness`),
   getEvents: (matchId) => request(`/matches/${matchId}/events`),
   createEvent: (matchId, body) => request(`/matches/${matchId}/events`, { method: 'POST', body: JSON.stringify(body) }),
