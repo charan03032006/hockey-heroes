@@ -1,9 +1,16 @@
 import app from '../backend/src/app.js';
 
 export default function handler(req, res) {
-  // /api/index.js is already mounted under /api by Vercel.
-  // Express routes in app.js also use the /api prefix.
-  if (!req.url.startsWith('/api')) {
+  // Vercel rewrites /api/:path* to this function and stores the
+  // original API path in the `path` query parameter.
+  const requestedPath = req.query?.path;
+
+  if (typeof requestedPath === 'string') {
+    const query = new URLSearchParams(req.query);
+    query.delete('path');
+    const suffix = query.toString();
+    req.url = `/api/${requestedPath}${suffix ? `?${suffix}` : ''}`;
+  } else if (!req.url.startsWith('/api')) {
     req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
   }
 
