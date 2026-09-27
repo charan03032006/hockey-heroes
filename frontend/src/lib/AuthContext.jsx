@@ -10,23 +10,48 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        setSession(session);
-        setLoading(false);
+    const syncSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (mounted) {
+          setSession(session);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Unable to sync authentication session:', error);
+        if (mounted) setLoading(false);
       }
-    });
+    };
+
+    syncSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setLoading(false);
+      (_event, nextSession) => {
+        if (mounted) {
+          setSession(nextSession);
+          setLoading(false);
+        }
       }
     );
+
+    // When a user verifies their email in another tab, refresh the session
+    // as soon as they return to this tab. Supabase also synchronizes auth
+    // storage across tabs; these listeners provide a reliable foreground sync.
+    const handleForeground = () => {
+      if (document.visibilityState === 'visible') syncSession();
+    };
+
+    window.addEventListener('focus', handleForeground);
+    window.addEventListener('pageshow', handleForeground);
+    document.addEventListener('visibilitychange', handleForeground);
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('focus', handleForeground);
+      window.removeEventListener('pageshow', handleForeground);
+      document.removeEventListener('visibilitychange', handleForeground);
     };
   }, []);
 
