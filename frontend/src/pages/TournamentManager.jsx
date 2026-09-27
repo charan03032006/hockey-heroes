@@ -181,7 +181,7 @@ export default function TournamentManager() {
   const tournamentTeamIds = useMemo(() => new Set(tournamentTeams.map((x) => x.team_id)), [tournamentTeams]);
   const selectableTeams = teams.filter((t) => !tournamentTeamIds.has(t.id));
 
-  if (!selected && approval?.status !== 'approved') {
+  if (approval?.status !== 'approved') {
     return <div className="tournament-page">
       <div className="page-head"><div><span className="eyebrow">TOURNAMENT MANAGER</span><h1>Admin approval required</h1><p className="muted">Tournament creation is locked until an administrator approves your access.</p></div><Link className="btn btn-ghost" to="/admin">← Manage</Link></div>
       <section className="admin-card"><span className="eyebrow">ACCESS REQUEST</span>
