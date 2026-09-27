@@ -5,11 +5,9 @@ import { api } from '../lib/api.js';
 export default function Home() {
   const [live, setLive] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
-  const [error, setError] = useState(null);
-
   useEffect(() => {
-    api.getMatches('?status=live').then(setLive).catch((e) => setError(e.message));
-    api.getMatches('?status=scheduled').then(setUpcoming).catch((e) => setError(e.message));
+    api.getMatches('?status=live').then(setLive).catch(() => setLive([]));
+    api.getMatches('?status=scheduled').then(setUpcoming).catch(() => setUpcoming([]));
   }, []);
 
   const featured = live[0] || upcoming[0];
@@ -46,8 +44,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {error && <div className="alert error">Couldn't load matches: {error}</div>}
 
       <section className="quick-start"><div><span className="eyebrow">NEW HERE?</span><h2>Follow a game in 3 simple steps</h2></div><div className="quick-steps"><div><b>1</b><span><strong>Find a match</strong><small>Choose live, upcoming or finished.</small></span></div><div><b>2</b><span><strong>Open the match</strong><small>See the score and match timeline.</small></span></div><div><b>3</b><span><strong>Follow the action</strong><small>Watch hockey events update live.</small></span></div></div></section><section className="section-block">
         <div className="section-heading">
