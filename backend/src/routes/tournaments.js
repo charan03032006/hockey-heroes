@@ -10,6 +10,16 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  if (!token) return res.status(401).json({ error: 'Sign in as an approved Tournament Manager to create a tournament.' });
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+  const user = authData?.user;
+  if (authError || !user) return res.status(401).json({ error: 'Your session is invalid. Please sign in again.' });
+  const isManager = user.app_metadata?.role === 'tournament-manager' || user.app_metadata?.roles?.includes?.('tournament-manager');
+  if (!isManager) return res.status(403).json({ error: 'Only a Tournament Manager can create a tournament.' });
+  const { data: approval, error: approvalError } = await supabase.from('tournament_manager_approval').select('status').eq('user_id', user.id).maybeSingle();
+  if (approvalError) return res.status(500).json({ error: approvalError.message });
+  if (approval?.status !== 'approved') return res.status(403).json({ error: 'Admin approval is required before you can create a tournament.' });
   const { name, rule_profile = 'standard', points_win = 3, points_draw = 1, points_loss = 0, shootout_enabled = true } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Tournament name is required.' });
   const { data, error } = await supabase.from('tournament').insert({ name: name.trim(), rule_profile, points_win, points_draw, points_loss, shootout_enabled }).select().single();
