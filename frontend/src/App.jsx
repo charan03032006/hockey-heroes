@@ -17,11 +17,19 @@ export default function App() {
           <Link to="/teams">Teams</Link>
           {user && <Link to="/tournaments">Tournaments</Link>}
           {user && <Link to="/admin">Manage</Link>}
-          {user ? <button type="button" className="nav-button" onClick={handleLogout}>Logout</button> : <Link className="nav-login" to="/login">Scorer sign in</Link>}
+          {user ? <button type="button" className="nav-button" onClick={handleLogout}>Logout</button> : <Link className="nav-login" to="/login">Sign in</Link>}
         </nav>
       </header>
       <main className="content"><Outlet /></main>
-      <footer className="site-footer"><span>🏑 Hockey Heroes</span><span>Live scores • Teams • Players • Tournaments</span></footer>
+      <footer className="site-footer">
+        <span>🏑 Hockey Heroes</span>
+        <span>Live scores • Teams • Players • Tournaments</span>
+        <div className="footer-logins">
+          <Link to="/login/tournament-manager">Tournament Manager login</Link>
+          <Link to="/login/team-manager">Team Manager login</Link>
+          <Link to="/login/player">Player login</Link>
+        </div>
+      </footer>
     </div>
   );
 }
