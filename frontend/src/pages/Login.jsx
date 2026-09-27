@@ -1,64 +1,75 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/AuthContext.jsx';
 
-// Always send magic links back to the origin hosting this app.
-// This prevents a stale VITE_AUTH_REDIRECT_URL from sending production users to localhost.
-function getAuthRedirectUrl() {
-  return new URL('/login', window.location.origin).toString();
-}
+const portals = {
+  'tournament-manager': { title: 'Tournament Manager', description: 'Manage tournaments, fixtures, officials and competition settings.', destination: '/tournaments' },
+  'team-manager': { title: 'Team Manager', description: 'Access your team area to manage team details and squad information.', destination: '/teams' },
+  player: { title: 'Player', description: 'Sign in to access your player area and follow your match activity.', destination: '/matches' },
+  scorer: { title: 'Scorer', description: 'Sign in to manage live match scoring and match events.', destination: '/matches' },
+};
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState(null);
-  const [sending, setSending] = useState(false);
+export default function Login({ role: routeRole }) {
+  const location = useLocation();
+  const role = routeRole || location.pathname.split('/').filter(Boolean).at(-1) || 'scorer';
+  const portal = portals[role] || portals.scorer;
+  const [loginId, setLoginId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+
+  const destination = useMemo(() => location.state?.from || portal.destination, [location.state, portal.destination]);
 
   useEffect(() => {
-    if (!loading && user) navigate(location.state?.from || '/matches', { replace: true });
-  }, [loading, user, location.state, navigate]);
+    if (!loading && user) navigate(destination, { replace: true });
+  }, [loading, user, destination, navigate]);
 
-  async function handleLogin(e) {
-    e.preventDefault();
-    setError(null);
-    setSent(false);
-    setSending(true);
+  async function handleLogin(event) {
+    event.preventDefault();
+    setError('');
+    setBusy(true);
     try {
-      const redirectTo = getAuthRedirectUrl();
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo: redirectTo },
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: loginId.trim(),
+        password,
       });
-      if (error) setError(error.message);
-      else setSent(true);
-    } catch (e) {
-      setError(e.message || 'Unable to send the login link.');
+      if (authError) throw authError;
+      navigate(destination, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Unable to sign in. Check your login ID and password.');
     } finally {
-      setSending(false);
+      setBusy(false);
     }
   }
 
   if (loading) return <div className="page-loading">Checking your login…</div>;
-  if (user) return <div className="page-loading">Opening your scorer area…</div>;
+  if (user) return <div className="page-loading">Opening your workspace…</div>;
 
   return (
     <div className="login-page">
       <section className="login-card">
-        <span className="eyebrow">SCORER ACCESS</span>
-        <h1>Sign in securely</h1>
-        <p className="muted">No password is needed. We will send a one-time magic link to your email.</p>
-        <div className="login-steps"><div><b>1</b><span>Enter your email</span></div><div><b>2</b><span>Open the link in your email</span></div><div><b>3</b><span>Return here automatically</span></div></div>
-        {sent && <div className="admin-success">✓ Link sent. Check your inbox and open the link on this device.</div>}
-        {error && <div className="alert error">{error}</div>}
+        <span className="eyebrow">HOCKEY HEROES · SECURE ACCESS</span>
+        <h1>{portal.title} login</h1>
+        <p className="muted">{portal.description}</p>
+        <div className="portal-links">
+          <Link className={role === 'tournament-manager' ? 'active' : ''} to="/login/tournament-manager">Tournament Manager</Link>
+          <Link className={role === 'team-manager' ? 'active' : ''} to="/login/team-manager">Team Manager</Link>
+          <Link className={role === 'player' ? 'active' : ''} to="/login/player">Player</Link>
+          <Link className={role === 'scorer' ? 'active' : ''} to="/login/scorer">Scorer</Link>
+        </div>
+        {error && <div className="alert error" role="alert">{error}</div>}
         <form onSubmit={handleLogin}>
-          <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
-          <button type="submit" disabled={sending}>{sending ? 'Sending…' : 'Email me a login link →'}</button>
+          <label className="login-label" htmlFor="login-id">Login ID (email)</label>
+          <input id="login-id" type="email" placeholder="Enter your registered login email" value={loginId} onChange={(e) => setLoginId(e.target.value)} required autoComplete="username" />
+          <label className="login-label" htmlFor="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+          <button type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in →'}</button>
         </form>
-        <Link to="/matches" className="login-back">← Continue without signing in</Link>
+        <p className="login-note">Use the email/login ID and password registered for your account. Access permissions must be assigned to your account by an administrator.</p>
+        <Link to="/matches" className="login-back">← Continue to public match centre</Link>
       </section>
     </div>
   );
