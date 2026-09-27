@@ -34,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="players/:id" element={<PlayerDetail />} />
             <Route path="login" element={<Login role="scorer" />} />
             <Route path="login/scorer" element={<Login role="scorer" />} />
+            <Route path="login/admin" element={<Login role="admin" />} />
             <Route path="login/tournament-manager" element={<Login role="tournament-manager" />} />
             <Route path="login/team-manager" element={<Login role="team-manager" />} />
             <Route path="login/player" element={<Login role="player" />} />
