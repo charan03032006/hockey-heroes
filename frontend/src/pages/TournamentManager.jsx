@@ -14,6 +14,8 @@ const roles = [
 export default function TournamentManager() {
   const { user } = useAuth();
   const [tournaments, setTournaments] = useState([]);
+  const [approval, setApproval] = useState(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
   const [selected, setSelected] = useState(null);
   const [tab, setTab] = useState('Overview');
   const [teams, setTeams] = useState([]);
@@ -31,7 +33,8 @@ export default function TournamentManager() {
   const [form, setForm] = useState({ name: '', rule_profile: 'standard', points_win: 3, points_draw: 1, points_loss: 0, shootout_enabled: true });
 
   async function loadBase() {
-    const [ts, tm] = await Promise.all([api.getTournaments(), api.getTeams()]);
+    const [ts, tm, approvalState] = await Promise.all([api.getTournaments(), api.getTeams(), api.getMyApproval()]);
+    setApproval(approvalState);
     setTournaments(ts || []);
     setTeams(tm || []);
     if (!selected && ts?.[0]) setSelected(ts[0]);
@@ -52,6 +55,13 @@ export default function TournamentManager() {
 
   useEffect(() => { loadBase().catch((e) => setError(e.message)); }, []);
   useEffect(() => { loadTournament(selected); }, [selected?.id]);
+
+  async function requestApproval() {
+    setApprovalBusy(true); setError('');
+    try { setApproval(await api.requestTournamentApproval()); setMessage('Approval request sent to the administrator.'); }
+    catch (e) { setError(e.message); }
+    finally { setApprovalBusy(false); }
+  }
 
   async function create(e) {
     e.preventDefault(); setBusy(true); setError('');
@@ -170,6 +180,17 @@ export default function TournamentManager() {
   const assignedRoles = useMemo(() => new Set(officials.map((x) => x.role)), [officials]);
   const tournamentTeamIds = useMemo(() => new Set(tournamentTeams.map((x) => x.team_id)), [tournamentTeams]);
   const selectableTeams = teams.filter((t) => !tournamentTeamIds.has(t.id));
+
+  if (!selected && approval?.status !== 'approved') {
+    return <div className="tournament-page">
+      <div className="page-head"><div><span className="eyebrow">TOURNAMENT MANAGER</span><h1>Admin approval required</h1><p className="muted">Tournament creation is locked until an administrator approves your access.</p></div><Link className="btn btn-ghost" to="/admin">← Manage</Link></div>
+      <section className="admin-card"><span className="eyebrow">ACCESS REQUEST</span>
+        <h2>{approval?.status === 'pending' ? 'Request under review' : approval?.status === 'rejected' ? 'Request not approved' : 'Request tournament-creation access'}</h2>
+        <p className="muted">{approval?.status === 'pending' ? 'Your request has been sent. You can create tournaments after approval.' : approval?.status === 'rejected' ? (approval.review_note || 'Your request was rejected. You may request approval again.') : 'Send an approval request to the admin. Your create-tournament tools will unlock once approved.'}</p>
+        {approval?.status !== 'pending' && <button type="button" disabled={approvalBusy} onClick={requestApproval}>{approvalBusy ? 'Sending…' : approval?.status === 'rejected' ? 'Request approval again →' : 'Request approval →'}</button>}
+      </section>{error && <div className="admin-error">{error}</div>}{message && <div className="admin-success">✓ {message}</div>}
+    </div>;
+  }
 
   if (!selected) {
     return <div className="tournament-page"><div className="page-head"><div><span className="eyebrow">TOURNAMENT MANAGER</span><h1>Create your first competition</h1><p className="muted">Build teams, lineups, officials and fixtures in one place.</p></div><Link className="btn btn-ghost" to="/admin">← Manage</Link></div><section className="admin-card create-tour"><span className="eyebrow">START HERE</span><h2>Create tournament</h2><form onSubmit={create}><input placeholder="Tournament name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /><select value={form.rule_profile} onChange={(e) => setForm({ ...form, rule_profile: e.target.value })}><option value="standard">Standard hockey</option><option value="custom">Custom competition</option></select><div className="form-row"><input type="number" min="0" value={form.points_win} onChange={(e) => setForm({ ...form, points_win: Number(e.target.value) })} /><input type="number" min="0" value={form.points_draw} onChange={(e) => setForm({ ...form, points_draw: Number(e.target.value) })} /><input type="number" min="0" value={form.points_loss} onChange={(e) => setForm({ ...form, points_loss: Number(e.target.value) })} /></div><label className="check-row"><input type="checkbox" checked={form.shootout_enabled} onChange={(e) => setForm({ ...form, shootout_enabled: e.target.checked })} /> Enable knockout shoot-outs</label><button disabled={busy}>{busy ? 'Creating…' : 'Create tournament →'}</button></form></section>{error && <div className="admin-error">{error}</div>}</div>;
