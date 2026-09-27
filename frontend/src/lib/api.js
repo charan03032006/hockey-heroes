@@ -1,11 +1,14 @@
+import { supabase } from './supabase.js';
+
 const API_URL = (import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api')).replace(/\/$/, '');
 
 async function request(path, options = {}) {
   let res;
+  const { data: { session } = {} } = await supabase.auth.getSession();
   try {
     res = await fetch(`${API_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}), ...(options.headers || {}) },
       ...options,
     });
   } catch (error) {
@@ -52,6 +55,10 @@ export const api = {
   deleteEvent: (id) => request(`/events/${id}`, { method: 'DELETE' }),
   getTeams: () => request('/teams'),
   getTournaments: () => request('/tournaments'),
+  getMyApproval: () => request('/approvals/mine'),
+  requestTournamentApproval: () => request('/approvals/request', { method: 'POST', body: JSON.stringify({}) }),
+  getApprovalRequests: () => request('/approvals'),
+  reviewApproval: (userId, status, review_note = '') => request(`/approvals/${userId}`, { method: 'PATCH', body: JSON.stringify({ status, review_note }) }),
   createTournament: (body) => request('/tournaments', { method: 'POST', body: JSON.stringify(body) }),
   getTournamentTeams: (id) => request(`/tournaments/${id}/teams`),
   addTournamentTeam: (id, team_id) => request(`/tournaments/${id}/teams`, { method: 'POST', body: JSON.stringify({ team_id }) }),
