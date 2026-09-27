@@ -1,17 +1,40 @@
-const API_URL = import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
+const API_URL = (import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api')).replace(/\/$/, '');
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options,
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Request failed: ${res.status}`);
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options,
+    });
+  } catch (error) {
+    throw new Error(`Unable to reach the API at ${API_URL}. Check that the backend is running and VITE_API_URL is configured correctly.`);
   }
+
   if (res.status === 204) return null;
-  return res.json();
+
+  const contentType = res.headers.get('content-type') || '';
+  const raw = await res.text();
+  let data = null;
+
+  if (raw && contentType.includes('application/json')) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(`The API returned invalid JSON (HTTP ${res.status}). Check the deployed API route.`);
+    }
+  } else if (raw) {
+    const preview = raw.replace(/\s+/g, ' ').slice(0, 160);
+    throw new Error(
+      `Expected JSON from ${path}, but received ${contentType || 'an unknown content type'} (HTTP ${res.status}). ${preview.startsWith('<!doctype') || preview.startsWith('<html') ? 'This usually means the request reached the frontend HTML fallback instead of the API.' : preview}`
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `Request failed: ${res.status}`);
+  }
+  return data;
 }
 
 export const api = {
