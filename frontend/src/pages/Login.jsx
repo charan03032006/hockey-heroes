@@ -3,10 +3,10 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/AuthContext.jsx';
 
+// Always send magic links back to the origin hosting this app.
+// This prevents a stale VITE_AUTH_REDIRECT_URL from sending production users to localhost.
 function getAuthRedirectUrl() {
-  const configuredUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
-  if (configuredUrl) return configuredUrl.replace(/\/$/, '') + '/login';
-  return `${window.location.origin}/login`;
+  return new URL('/login', window.location.origin).toString();
 }
 
 export default function Login() {
