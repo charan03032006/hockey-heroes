@@ -5,11 +5,15 @@
   "installCommand": "npm install",
   "framework": "vite",
   "functions": {
-    "api/[...path].js": {
+    "api/index.js": {
       "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index?path=$1"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
