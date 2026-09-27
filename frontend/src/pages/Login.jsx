@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/AuthContext.jsx';
 
 const portals = {
+  admin: { title: 'Admin', description: 'Sign in to review manager approvals and administer Hockey Heroes.', destination: '/admin' },
   'tournament-manager': { title: 'Tournament Manager', description: 'Manage tournaments, fixtures, officials and competition settings.', destination: '/tournaments' },
   'team-manager': { title: 'Team Manager', description: 'Access your team area to manage team details and squad information.', destination: '/teams' },
   player: { title: 'Player', description: 'Sign in to access your player area and follow your match activity.', destination: '/matches' },
@@ -14,7 +15,7 @@ export default function Login({ role: routeRole }) {
   const location = useLocation();
   const role = routeRole || location.pathname.split('/').filter(Boolean).at(-1) || 'scorer';
   const portal = portals[role] || portals.scorer;
-  const [loginId, setLoginId] = useState('');
+  const [loginId, setLoginId] = useState(role === 'admin' ? 'charanvwork@gmail.com' : '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -59,6 +60,7 @@ export default function Login({ role: routeRole }) {
           <Link className={role === 'team-manager' ? 'active' : ''} to="/login/team-manager">Team Manager</Link>
           <Link className={role === 'player' ? 'active' : ''} to="/login/player">Player</Link>
           <Link className={role === 'scorer' ? 'active' : ''} to="/login/scorer">Scorer</Link>
+          <Link className={role === 'admin' ? 'active' : ''} to="/login/admin">Admin</Link>
         </div>
         {error && <div className="alert error" role="alert">{error}</div>}
         <form onSubmit={handleLogin}>
