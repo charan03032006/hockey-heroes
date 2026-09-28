@@ -15,6 +15,7 @@ export default function App() {
         <nav>
           <Link to="/matches">Matches</Link>
           <Link to="/teams">Teams</Link>
+          <Link to="/leaderboard">Leaderboard</Link>
           {user && <Link to="/tournaments">Tournaments</Link>}
           {user && <Link to="/admin">Manage</Link>}
           {user ? <button type="button" className="nav-button" onClick={handleLogout}>Logout</button> : <Link className="nav-login" to="/login">Sign in</Link>}
