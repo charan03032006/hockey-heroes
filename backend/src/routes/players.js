@@ -9,7 +9,7 @@ router.get('/:id', async (req, res) => {
 
   const [{ data: stats }, { data: events, error: eventsError }] = await Promise.all([
     supabase.from('player_stats').select('*').eq('player_id', req.params.id).maybeSingle(),
-    supabase.from('event').select('match_id,type,period,game_time,team_id,match:match_id(id,scheduled_at,status,home_team:home_team_id(id,name,short_name),away_team:away_team_id(id,name,short_name))').eq('player_id', req.params.id).order('created_at', { ascending: false }),
+    supabase.from('event').select('id,match_id,type,period,game_time,team_id,match:match_id(id,scheduled_at,status,home_team:home_team_id(id,name,short_name),away_team:away_team_id(id,name,short_name))').eq('player_id', req.params.id).order('created_at', { ascending: false }),
   ]);
   if (eventsError) return res.status(500).json({ error: eventsError.message });
 
