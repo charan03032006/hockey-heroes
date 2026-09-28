@@ -10,6 +10,7 @@ import Scorer from './pages/Scorer.jsx';
 import Teams from './pages/Teams.jsx';
 import TeamDetail from './pages/TeamDetail.jsx';
 import PlayerDetail from './pages/PlayerDetail.jsx';
+import Leaderboard from './pages/Leaderboard.jsx';
 import Login from './pages/Login.jsx';
 import Admin from './pages/Admin.jsx';
 import AdminApprovals from './pages/AdminApprovals.jsx';
@@ -32,6 +33,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="teams" element={<Teams />} />
             <Route path="teams/:id" element={<TeamDetail />} />
             <Route path="players/:id" element={<PlayerDetail />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="login" element={<Login role="scorer" />} />
             <Route path="login/scorer" element={<Login role="scorer" />} />
             <Route path="login/admin" element={<Login role="admin" />} />
