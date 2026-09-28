@@ -108,7 +108,35 @@ export default function Scorer() {
         ...extra,
       });
       setEvents((value) => [event, ...value]);
-      if (type === 'goal') setMatch(await api.getMatch(id));
+      if (type === 'goal') {
+        setMatch(await api.getMatch(id));
+        const teammates = selectedRoster.filter((player) => player.id !== selected.player.id);
+        if (teammates.length) {
+          const options = teammates.map((player, index) => `${index + 1}. #${player.jersey_number ?? '—'} ${player.name}`).join('\\n');
+          const answer = window.prompt(`Optional: enter the number of the player who assisted this goal, or leave blank.\\n\\n${options}`, '');
+          if (answer?.trim()) {
+            const index = Number(answer) - 1;
+            const assister = Number.isInteger(index) && index >= 0 ? teammates[index] : null;
+            if (assister) {
+              try {
+                const assist = await api.createEvent(id, {
+                  player_id: assister.id,
+                  team_id: selected.teamId,
+                  type: 'assist',
+                  period,
+                  game_time: clockLabel(clock),
+                  related_player_id: selected.player.id,
+                });
+                setEvents((value) => [assist, ...value]);
+              } catch (assistError) {
+                setMessage(`Goal recorded, but the assist could not be saved: ${assistError.message}`);
+              }
+            } else {
+              setMessage('Goal recorded. Assist skipped because the player number was invalid.');
+            }
+          }
+        }
+      }
       setSelected(null);
     } catch (e) { setMessage(e.message); }
     finally { setBusy(false); }
