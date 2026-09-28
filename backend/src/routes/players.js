@@ -34,11 +34,39 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { team_id, name, jersey_number, position } = req.body;
+  const { team_id, name, jersey_number, position, is_goalkeeper = false } = req.body;
   if (!team_id || !name?.trim()) return res.status(400).json({ error: 'team_id and name are required' });
-  const { data, error } = await supabase.from('player').insert({ team_id, name: name.trim(), jersey_number, position }).select().single();
+  if (jersey_number !== undefined && jersey_number !== null && (!Number.isInteger(Number(jersey_number)) || Number(jersey_number) < 0 || Number(jersey_number) > 99)) {
+    return res.status(400).json({ error: 'Jersey number must be a whole number from 0 to 99.' });
+  }
+  const { data, error } = await supabase.from('player').insert({
+    team_id, name: name.trim(), jersey_number: jersey_number === '' ? null : jersey_number ?? null,
+    position: position?.trim() || null, is_goalkeeper: Boolean(is_goalkeeper),
+  }).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
+});
+
+router.patch('/:id', async (req, res) => {
+  const { name, jersey_number, position, is_goalkeeper } = req.body;
+  const patch = {};
+  if (name !== undefined) {
+    if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ error: 'Player name cannot be empty.' });
+    patch.name = name.trim();
+  }
+  if (jersey_number !== undefined) {
+    if (jersey_number !== null && jersey_number !== '' && (!Number.isInteger(Number(jersey_number)) || Number(jersey_number) < 0 || Number(jersey_number) > 99)) {
+      return res.status(400).json({ error: 'Jersey number must be a whole number from 0 to 99.' });
+    }
+    patch.jersey_number = jersey_number === '' ? null : jersey_number;
+  }
+  if (position !== undefined) patch.position = typeof position === 'string' ? (position.trim() || null) : null;
+  if (is_goalkeeper !== undefined) patch.is_goalkeeper = Boolean(is_goalkeeper);
+  if (!Object.keys(patch).length) return res.status(400).json({ error: 'No player fields provided to update.' });
+  const { data, error } = await supabase.from('player').update(patch).eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Player not found.' });
+  res.json(data);
 });
 
 export default router;
