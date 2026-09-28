@@ -71,4 +71,5 @@ export const api = {
   createTeam: (body) => request('/teams', { method: 'POST', body: JSON.stringify(body) }),
   getPlayer: (id) => request(`/players/${id}`),
   createPlayer: (body) => request('/players', { method: 'POST', body: JSON.stringify(body) }),
+  updatePlayer: (id, body) => request(`/players/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
