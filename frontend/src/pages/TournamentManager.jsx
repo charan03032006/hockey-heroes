@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from '../lib/AuthContext.jsx';
 
-const tabs = ['Overview', 'Teams & lineups', 'Officials', 'Fixtures'];
+const tabs = ['Overview', 'Teams & lineups', 'Officials', 'Fixtures', 'Standings'];
 const roles = [
   ['umpire_1', 'Umpire 1'],
   ['umpire_2', 'Umpire 2'],
@@ -21,6 +21,8 @@ export default function TournamentManager() {
   const [teams, setTeams] = useState([]);
   const [tournamentTeams, setTournamentTeams] = useState([]);
   const [fixtures, setFixtures] = useState([]);
+  const [standings, setStandings] = useState([]);
+  const [roundRobinStart, setRoundRobinStart] = useState(() => { const d = new Date(Date.now() + 86400000); d.setHours(10, 0, 0, 0); const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return local.toISOString().slice(0, 16); });
   const [fixture, setFixture] = useState(null);
   const [rosters, setRosters] = useState({});
   const [lineups, setLineups] = useState({});
@@ -44,9 +46,10 @@ export default function TournamentManager() {
     if (!tournament) return;
     setError('');
     try {
-      const [tt, fs] = await Promise.all([api.getTournamentTeams(tournament.id), api.getTournamentFixtures(tournament.id)]);
+      const [tt, fs, table] = await Promise.all([api.getTournamentTeams(tournament.id), api.getTournamentFixtures(tournament.id), api.getTournamentStandings(tournament.id).catch(() => ({ standings: [] }))]);
       setTournamentTeams(tt || []);
       setFixtures(fs || []);
+      setStandings(Array.isArray(table?.standings) ? table.standings : []);
       setFixture(null);
       setReadiness(null);
       setOfficials([]);
@@ -150,6 +153,53 @@ export default function TournamentManager() {
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
 
+  async function generateRoundRobin() {
+    if (!selected || tournamentTeams.length < 2) return setError('Add at least two teams before generating fixtures.');
+    if (!roundRobinStart) return setError('Choose a starting date and time.');
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const ids = tournamentTeams.map((row) => row.team_id);
+      const rotation = [...ids, ...(ids.length % 2 ? [null] : [])];
+      const rounds = rotation.length - 1;
+      const existing = new Set(fixtures.map((f) => [f.home_team_id, f.away_team_id].sort().join(':')));
+      const planned = [];
+      for (let round = 0; round < rounds; round += 1) {
+        for (let i = 0; i < rotation.length / 2; i += 1) {
+          const left = rotation[i];
+          const right = rotation[rotation.length - 1 - i];
+          if (!left || !right) continue;
+          const home = round % 2 === 0 ? left : right;
+          const away = round % 2 === 0 ? right : left;
+          const key = [home, away].sort().join(':');
+          if (!existing.has(key)) {
+            existing.add(key);
+            planned.push({ home_team_id: home, away_team_id: away });
+          }
+        }
+        rotation.splice(1, 0, rotation.pop());
+      }
+      if (!planned.length) {
+        setMessage('All round-robin pairings already exist.');
+        return;
+      }
+      const start = new Date(roundRobinStart);
+      let created = 0;
+      for (let i = 0; i < planned.length; i += 1) {
+        const scheduled = new Date(start.getTime() + i * 2 * 60 * 60 * 1000);
+        await api.createTournamentFixture(selected.id, {
+          ...planned[i],
+          scheduled_at: scheduled.toISOString(),
+        });
+        created += 1;
+      }
+      await loadTournament(selected);
+      setMessage(`Generated ${created} round-robin fixture${created === 1 ? '' : 's'}.`);
+    } catch (e) {
+      await loadTournament(selected);
+      setError(e.message || 'Could not generate all fixtures. Any successfully created fixtures have been kept.');
+    } finally { setBusy(false); }
+  }
+
   async function saveOfficials() {
     if (!fixture || !user?.id) return setError('You must be signed in to assign officials.');
     setBusy(true); setError('');
@@ -211,7 +261,9 @@ export default function TournamentManager() {
 
           {tab === 'Officials' && <section className="admin-card"><span className="eyebrow">03 · OFFICIALS</span><h2>Assign officials</h2><p className="muted">Select a fixture, then assign the signed-in official to the required roles.</p><select value={fixture?.id || ''} onChange={(e) => { const f = fixtures.find((x) => x.id === e.target.value); if (f) selectFixture(f); }}><option value="">Select fixture</option>{fixtures.map((f) => <option key={f.id} value={f.id}>{f.home_team?.name} vs {f.away_team?.name}</option>)}</select>{fixture && <div className="manager-team-list">{roles.map(([role, label]) => { const assigned = officials.find((x) => x.role === role); return <div key={role}><span><b>{label}</b><small>{assigned ? 'Assigned' : 'Not assigned'}</small></span><button type="button" onClick={() => assignMe(role)}>{assigned?.user_id === user?.id ? 'Assigned to me' : 'Assign me'}</button></div>; })}<button className="btn btn-primary" disabled={busy || !assignedRoles.size} onClick={saveOfficials}>Save officials →</button></div>}</section>}
 
-          {tab === 'Fixtures' && <section className="admin-card"><span className="eyebrow">04 · FIXTURES</span><h2>Create & prepare fixtures</h2><form onSubmit={createFixture}><div className="form-row"><select value={fixtureForm.home_team_id} onChange={(e) => setFixtureForm({ ...fixtureForm, home_team_id: e.target.value })} required><option value="">Home team</option>{tournamentTeams.map((m) => <option key={m.team_id} value={m.team_id}>{m.team?.name || pTeamName(m.team_id)}</option>)}</select><select value={fixtureForm.away_team_id} onChange={(e) => setFixtureForm({ ...fixtureForm, away_team_id: e.target.value })} required><option value="">Away team</option>{tournamentTeams.map((m) => <option key={m.team_id} value={m.team_id}>{m.team?.name || pTeamName(m.team_id)}</option>)}</select></div><input type="datetime-local" value={fixtureForm.scheduled_at} onChange={(e) => setFixtureForm({ ...fixtureForm, scheduled_at: e.target.value })} required /><button disabled={busy || tournamentTeams.length < 2}>{busy ? 'Saving…' : 'Create fixture →'}</button></form><div className="fixture-list">{fixtures.map((f) => <div className={fixture?.id === f.id ? 'fixture-item active' : 'fixture-item'} key={f.id}><div><b>{f.home_team?.name || pTeamName(f.home_team_id)} <span>vs</span> {f.away_team?.name || pTeamName(f.away_team_id)}</b><small>{f.scheduled_at ? new Date(f.scheduled_at).toLocaleString() : 'No time'} · {String(f.status).toUpperCase()}</small></div><div className="fixture-actions"><button onClick={() => { selectFixture(f); setTab('Teams & lineups'); }}>Lineups</button><button onClick={() => { selectFixture(f); setTab('Officials'); }}>Officials</button>{f.status === 'scheduled' && <button className="btn btn-primary" onClick={() => { selectFixture(f); setTab('Fixtures'); }}>Prepare</button>}</div></div>)}{!fixtures.length && <p className="muted">No fixtures yet. Add at least two tournament teams first.</p>}</div>{fixture && <div className="pre-match"><div><span className="eyebrow">PRE-MATCH CHECK</span><h3>{fixture.home_team?.name || pTeamName(fixture.home_team_id)} vs {fixture.away_team?.name || pTeamName(fixture.away_team_id)}</h3></div><div className="check-list">{readiness?.checks?.map((c, i) => <div key={i}>{c.team_id ? <><span>{pTeamName(c.team_id)}</span><b>{c.starting_players && c.goalkeeper ? '✓ Ready' : '⚠ Incomplete'}</b></> : <><span>Officials</span><b>{c.officials ? '✓ Ready' : '⚠ Umpire 1 + scorer required'}</b></>}</div>)}</div><button className="btn btn-primary" disabled={busy || !readiness?.ready || fixture.status !== 'scheduled'} onClick={startMatch}>{fixture.status === 'live' ? 'Match live' : readiness?.ready ? 'Start match →' : 'Complete checks to start'}</button>{fixture.status === 'live' && <Link className="btn btn-ghost" to={`/matches/${fixture.id}/score`}>Open scorer console →</Link>}</div>}</section>}
+          {tab === 'Standings' && <section className="admin-card"><span className="eyebrow">05 · TABLE</span><h2>Points table</h2><p className="muted">Standings are calculated from completed fixtures using this tournament's points rules.</p>{standings.length ? <div className="table-scroll"><table className="standings-table"><thead><tr><th>#</th><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>{standings.map((row, index) => <tr key={row.team_id}><td>{index + 1}</td><td><b>{row.team?.name || pTeamName(row.team_id)}</b></td><td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{row.goals_for}</td><td>{row.goals_against}</td><td>{row.goal_difference > 0 ? '+' : ''}{row.goal_difference}</td><td><b>{row.points}</b></td></tr>)}</tbody></table></div> : <div className="empty-card"><span>🏆</span><div><strong>No standings yet</strong><p className="muted">Add teams and finish matches to populate the points table.</p></div></div>}</section>}
+
+          {tab === 'Fixtures' && <section className="admin-card"><span className="eyebrow">04 · FIXTURES</span><h2>Create & prepare fixtures</h2><div className="info-callout"><b>Round-robin generator</b><p className="muted">Automatically create one fixture for each team pairing. Odd-sized groups receive a bye. Existing pairings are skipped.</p><label className="field-label">First fixture date & time</label><input type="datetime-local" value={roundRobinStart} onChange={(e) => setRoundRobinStart(e.target.value)} /><button type="button" className="btn btn-primary" disabled={busy || tournamentTeams.length < 2 || !roundRobinStart} onClick={generateRoundRobin}>{busy ? 'Generating fixtures…' : 'Generate round-robin fixtures →'}</button></div><form onSubmit={createFixture}><div className="form-row"><select value={fixtureForm.home_team_id} onChange={(e) => setFixtureForm({ ...fixtureForm, home_team_id: e.target.value })} required><option value="">Home team</option>{tournamentTeams.map((m) => <option key={m.team_id} value={m.team_id}>{m.team?.name || pTeamName(m.team_id)}</option>)}</select><select value={fixtureForm.away_team_id} onChange={(e) => setFixtureForm({ ...fixtureForm, away_team_id: e.target.value })} required><option value="">Away team</option>{tournamentTeams.map((m) => <option key={m.team_id} value={m.team_id}>{m.team?.name || pTeamName(m.team_id)}</option>)}</select></div><input type="datetime-local" value={fixtureForm.scheduled_at} onChange={(e) => setFixtureForm({ ...fixtureForm, scheduled_at: e.target.value })} required /><button disabled={busy || tournamentTeams.length < 2}>{busy ? 'Saving…' : 'Create fixture →'}</button></form><div className="fixture-list">{fixtures.map((f) => <div className={fixture?.id === f.id ? 'fixture-item active' : 'fixture-item'} key={f.id}><div><b>{f.home_team?.name || pTeamName(f.home_team_id)} <span>vs</span> {f.away_team?.name || pTeamName(f.away_team_id)}</b><small>{f.scheduled_at ? new Date(f.scheduled_at).toLocaleString() : 'No time'} · {String(f.status).toUpperCase()}</small></div><div className="fixture-actions"><button onClick={() => { selectFixture(f); setTab('Teams & lineups'); }}>Lineups</button><button onClick={() => { selectFixture(f); setTab('Officials'); }}>Officials</button>{f.status === 'scheduled' && <button className="btn btn-primary" onClick={() => { selectFixture(f); setTab('Fixtures'); }}>Prepare</button>}</div></div>)}{!fixtures.length && <p className="muted">No fixtures yet. Add at least two tournament teams first.</p>}</div>{fixture && <div className="pre-match"><div><span className="eyebrow">PRE-MATCH CHECK</span><h3>{fixture.home_team?.name || pTeamName(fixture.home_team_id)} vs {fixture.away_team?.name || pTeamName(fixture.away_team_id)}</h3></div><div className="check-list">{readiness?.checks?.map((c, i) => <div key={i}>{c.team_id ? <><span>{pTeamName(c.team_id)}</span><b>{c.starting_players && c.goalkeeper ? '✓ Ready' : '⚠ Incomplete'}</b></> : <><span>Officials</span><b>{c.officials ? '✓ Ready' : '⚠ Umpire 1 + scorer required'}</b></>}</div>)}</div><button className="btn btn-primary" disabled={busy || !readiness?.ready || fixture.status !== 'scheduled'} onClick={startMatch}>{fixture.status === 'live' ? 'Match live' : readiness?.ready ? 'Start match →' : 'Complete checks to start'}</button>{fixture.status === 'live' && <Link className="btn btn-ghost" to={`/matches/${fixture.id}/score`}>Open scorer console →</Link>}</div>}</section>}
         </main>
       </div>
       {message && <div className="admin-success">✓ {message}</div>}
