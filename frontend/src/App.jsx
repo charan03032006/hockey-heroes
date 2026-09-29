@@ -26,7 +26,7 @@ export default function App() {
         <span>🏑 Hockey Heroes</span>
         <span>Live scores • Teams • Players • Tournaments</span>
         <div className="footer-logins">
-          <Link to="/login/admin">Admin login</Link>
+          <Link to="/admin-login">Admin login</Link>
           <Link to="/login/tournament-manager">Tournament Manager login</Link>
           <Link to="/login/team-manager">Team Manager login</Link>
           <Link to="/login/player">Player login</Link>
