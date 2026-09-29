@@ -13,6 +13,7 @@ export default function App() {
       <header className="topbar">
         <Link to="/" className="brand"><span className="brand-mark">🏑</span><span>Hockey <b>Heroes</b></span></Link>
         <nav>
+          <Link to="/live">Live Centre</Link>
           <Link to="/matches">Matches</Link>
           <Link to="/teams">Teams</Link>
           <Link to="/leaderboard">Leaderboard</Link>
