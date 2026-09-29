@@ -32,6 +32,7 @@ export default function TournamentManager() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [fixtureForm, setFixtureForm] = useState({ home_team_id: '', away_team_id: '', scheduled_at: '' });
+  const [newTeamForm, setNewTeamForm] = useState({ name: '', short_name: '' });
   const [form, setForm] = useState({ name: '', rule_profile: 'standard', points_win: 3, points_draw: 1, points_loss: 0, shootout_enabled: true });
 
   async function loadBase() {
@@ -81,6 +82,21 @@ export default function TournamentManager() {
       await loadTournament(selected);
       setMessage('Team added to tournament.');
     } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+
+  async function createTeamAndAdd(e) {
+    e.preventDefault();
+    if (!selected) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const created = await api.createTeam({ name: newTeamForm.name.trim(), short_name: newTeamForm.short_name.trim() || undefined });
+      setTeams((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
+      await api.addTournamentTeam(selected.id, created.id);
+      await loadTournament(selected);
+      setNewTeamForm({ name: '', short_name: '' });
+      setMessage('Team created and added to this tournament. Add players to its roster from Teams.');
+    } catch (e) { setError(e.message || 'Could not create and add the team.'); }
+    finally { setBusy(false); }
   }
 
   async function loadRoster(teamId) {
@@ -288,7 +304,7 @@ export default function TournamentManager() {
 
           {tab === 'Overview' && <section className="manager-grid"><div className="admin-card"><span className="eyebrow">01</span><h3>Competition rules</h3><p className="muted">Win {selected.points_win} · Draw {selected.points_draw} · Loss {selected.points_loss} points. Regulation is 4 × 15 minutes.</p></div><div className="admin-card"><span className="eyebrow">02</span><h3>Pre-match gate</h3><p className="muted">A match can start only after both teams have valid 11-player starting lineups, one starting goalkeeper each, Umpire 1 and a match scorer.</p></div></section>}
 
-          {tab === 'Teams & lineups' && <section className="admin-card"><span className="eyebrow">01 · TEAMS</span><h2>Tournament teams</h2><p className="muted">Add teams to this competition. Lineups are configured for an individual fixture.</p><div className="manager-team-list">{tournamentTeams.map((m) => <div key={m.team_id}><span><b>{m.team?.name || pTeamName(m.team_id)}</b><small>{m.team?.short_name || 'Tournament team'}</small></span><span className="status">ADDED</span></div>)}{selectableTeams.map((t) => <div key={t.id}><span><b>{t.name}</b><small>{t.short_name || 'Team'}</small></span><button disabled={busy} onClick={() => addTeam(t.id)}>Add to tournament</button></div>)}{!teams.length && <p className="muted">Create teams in Admin first.</p>}</div><div className="info-callout"><b>Lineup rules</b><br />Each matchday squad must contain 11–18 players, exactly 11 starters and exactly one starting goalkeeper.</div>{fixture && <LineupEditor fixture={fixture} tournamentTeams={tournamentTeams} rosters={rosters} lineups={lineups} loadRoster={loadRoster} togglePlayer={togglePlayer} saveLineups={saveLineups} busy={busy} pTeamName={pTeamName} />}</section>}
+          {tab === 'Teams & lineups' && <section className="admin-card"><span className="eyebrow">01 · TEAMS</span><h2>Tournament teams</h2><p className="muted">Add existing teams or create a new team right here. Lineups are configured for an individual fixture.</p><form className="inline-team-create" onSubmit={createTeamAndAdd}><div className="form-row"><input value={newTeamForm.name} onChange={(e) => setNewTeamForm({ ...newTeamForm, name: e.target.value })} placeholder="New team name" aria-label="New team name" required maxLength={100} /><input value={newTeamForm.short_name} onChange={(e) => setNewTeamForm({ ...newTeamForm, short_name: e.target.value })} placeholder="Short name (optional)" aria-label="Team short name" maxLength={20} /></div><button className="btn btn-primary" disabled={busy || !newTeamForm.name.trim()}>{busy ? 'Creating…' : 'Create team & add to tournament →'}</button></form><div className="manager-team-list">{tournamentTeams.map((m) => <div key={m.team_id}><span><b>{m.team?.name || pTeamName(m.team_id)}</b><small>{m.team?.short_name || 'Tournament team'}</small></span><span className="status">ADDED</span></div>)}{selectableTeams.map((t) => <div key={t.id}><span><b>{t.name}</b><small>{t.short_name || 'Team'}</small></span><button disabled={busy} onClick={() => addTeam(t.id)}>Add to tournament</button></div>)}{!teams.length && <p className="muted">Create teams in Admin first.</p>}</div><div className="info-callout"><b>Lineup rules</b><br />Each matchday squad must contain 11–18 players, exactly 11 starters and exactly one starting goalkeeper.</div>{fixture && <LineupEditor fixture={fixture} tournamentTeams={tournamentTeams} rosters={rosters} lineups={lineups} loadRoster={loadRoster} togglePlayer={togglePlayer} saveLineups={saveLineups} busy={busy} pTeamName={pTeamName} />}</section>}
 
           {tab === 'Officials' && <section className="admin-card"><span className="eyebrow">03 · OFFICIALS</span><h2>Assign officials</h2><p className="muted">Select a fixture, then assign the signed-in official to the required roles.</p><select value={fixture?.id || ''} onChange={(e) => { const f = fixtures.find((x) => x.id === e.target.value); if (f) selectFixture(f); }}><option value="">Select fixture</option>{fixtures.map((f) => <option key={f.id} value={f.id}>{f.home_team?.name} vs {f.away_team?.name}</option>)}</select>{fixture && <div className="manager-team-list">{roles.map(([role, label]) => { const assigned = officials.find((x) => x.role === role); return <div key={role}><span><b>{label}</b><small>{assigned ? 'Assigned' : 'Not assigned'}</small></span><button type="button" onClick={() => assignMe(role)}>{assigned?.user_id === user?.id ? 'Assigned to me' : 'Assign me'}</button></div>; })}<button className="btn btn-primary" disabled={busy || !assignedRoles.size} onClick={saveOfficials}>Save officials →</button></div>}</section>}
 
