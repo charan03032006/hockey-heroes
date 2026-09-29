@@ -12,6 +12,7 @@ import TeamDetail from './pages/TeamDetail.jsx';
 import PlayerDetail from './pages/PlayerDetail.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import Login from './pages/Login.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import Admin from './pages/Admin.jsx';
 import AdminApprovals from './pages/AdminApprovals.jsx';
 import TournamentManager from './pages/TournamentManager.jsx';
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="players/:id" element={<PlayerDetail />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="login" element={<Login role="scorer" />} />
+            <Route path="reset-password" element={<ResetPassword />} />
             <Route path="login/scorer" element={<Login role="scorer" />} />
             <Route path="login/admin" element={<Login role="admin" />} />
             <Route path="login/tournament-manager" element={<Login role="tournament-manager" />} />
