@@ -1,7 +1,12 @@
 import { supabase } from './supabase.js';
 
-const API_URL = (import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api')).replace(/\/$/, '');
+const configuredApiUrl = (import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api')).trim().replace(/\/+$/, '');
+// The API client always targets the backend's /api namespace. This also
+// handles VITE_API_URL values that contain only the backend origin.
+const API_URL = /\/api$/i.test(configuredApiUrl)
+  ? configuredApiUrl
+  : `${configuredApiUrl}/api`;
 
 async function request(path, options = {}) {
   let res;
