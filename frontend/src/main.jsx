@@ -38,6 +38,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="login" element={<Login role="scorer" />} />
             <Route path="reset-password" element={<ResetPassword />} />
             <Route path="login/scorer" element={<Login role="scorer" />} />
+            <Route path="admin-login" element={<Login role="admin" />} />
             <Route path="login/admin" element={<Login role="admin" />} />
             <Route path="login/tournament-manager" element={<Login role="tournament-manager" />} />
             <Route path="login/team-manager" element={<Login role="team-manager" />} />
