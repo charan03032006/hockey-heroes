@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import App from './App.jsx';
 import Home from './pages/Home.jsx';
+import LiveCenter from './pages/LiveCenter.jsx';
 import Matches from './pages/Matches.jsx';
 import MatchLive from './pages/MatchLive.jsx';
 import Scorer from './pages/Scorer.jsx';
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/" element={<App />}>
             <Route index element={<Home />} />
             <Route path="matches" element={<Matches />} />
+            <Route path="live" element={<LiveCenter />} />
             <Route path="matches/:id" element={<MatchLive />} />
             <Route path="teams" element={<Teams />} />
             <Route path="teams/:id" element={<TeamDetail />} />
