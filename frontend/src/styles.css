@@ -39,3 +39,8 @@ form{display:flex;flex-wrap:wrap;gap:.65rem;margin-bottom:1.5rem}input,select{mi
 .footer-logins a{color:var(--muted);font-size:.8rem;text-decoration:none}
 .footer-logins a:hover{color:var(--accent)}
 @media(max-width:520px){.portal-links{grid-template-columns:1fr 1fr}.footer-logins{flex-direction:column;gap:.45rem}}
+
+
+/* Tournament analytics */
+.analytics-bars{display:grid;gap:1rem;margin-top:1rem}.analytics-bar-row{display:grid;gap:.45rem}.analytics-bar-label{display:flex;justify-content:space-between;gap:1rem;font-size:.9rem}.analytics-bar-label span,.analytics-bar-label a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.analytics-bar-track{height:9px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}.analytics-bar-fill{height:100%;min-width:0;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:99px;transition:width .25s ease}.analytics-bar-player{background:linear-gradient(90deg,#3b82f6,#8b5cf6)}.analytics-bar-label b{font-variant-numeric:tabular-nums}.page-actions{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}.fixture-actions{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+@media(max-width:700px){.page-actions{width:100%}.page-actions .btn{flex:1;text-align:center}.analytics-bar-label{font-size:.82rem}.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.table-wrap{overflow-x:auto}.table-wrap table{min-width:760px}}
